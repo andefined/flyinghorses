@@ -78,10 +78,6 @@ func (s *CellMeasurementService) Consume() {
 }
 
 // Produce
-// 202,10,40700,2617101,164,3350,
-// -52.9655,2680,10223,13,-0.383168,
-// -14.5692,-5.42715,-18.314,8.50311,
-// 48b8183c972c9c7ed16210001ea81c543f22aa91d48719adf145,1661453161
 // os << tower.mcc << "," << tower.mnc << "," << tower.tac << "," << tower.cid << "," << tower.phyid << ","
 // << tower.earfcn << "," << tower.rssi << "," << tower.frequency << "," << tower.enodeb_id << "," << tower.sector_id
 // << "," << tower.cfo << "," << tower.rsrq << "," << tower.snr << "," << tower.rsrp << "," << tower.tx_pwr << ","
@@ -89,23 +85,23 @@ func (s *CellMeasurementService) Consume() {
 func (s *CellMeasurementService) Produce(msg string) {
 	cellData := strings.Split(msg, ",")
 	if len(cellData) == 17 {
-		mcc, _ := strconv.ParseInt(cellData[0], 10, 32)
-		mnc, _ := strconv.ParseInt(cellData[1], 10, 32)
-		tac, _ := strconv.ParseInt(cellData[2], 10, 32)
-		cid, _ := strconv.ParseInt(cellData[3], 10, 32)
-		phyid, _ := strconv.ParseInt(cellData[4], 10, 32)
-		earfcn, _ := strconv.ParseInt(cellData[5], 10, 32)
-		rssi, _ := strconv.ParseFloat(cellData[6], 32)
-		frequency, _ := strconv.ParseFloat(cellData[7], 32)
-		enodeb_id, _ := strconv.ParseInt(cellData[8], 10, 32)
-		sector_id, _ := strconv.ParseInt(cellData[9], 10, 32)
-		cfo, _ := strconv.ParseFloat(cellData[10], 32)
-		rsrq, _ := strconv.ParseFloat(cellData[11], 32)
-		snr, _ := strconv.ParseFloat(cellData[12], 32)
-		rsrp, _ := strconv.ParseFloat(cellData[13], 32)
-		tx_pwr, _ := strconv.ParseFloat(cellData[14], 32)
-		est_dist, _ := strconv.ParseFloat(cellData[15], 32)
-		timestamp, _ := strconv.ParseInt(cellData[16], 10, 32)
+		mcc, _ := strconv.ParseInt(cellData[0], 10, 32)        // tower.mcc
+		mnc, _ := strconv.ParseInt(cellData[1], 10, 32)        // tower.mnc
+		tac, _ := strconv.ParseInt(cellData[2], 10, 32)        // tower.tac
+		cid, _ := strconv.ParseInt(cellData[3], 10, 32)        // tower.cid
+		phyid, _ := strconv.ParseInt(cellData[4], 10, 32)      // tower.phyid
+		earfcn, _ := strconv.ParseInt(cellData[5], 10, 32)     // tower.earfcn
+		rssi, _ := strconv.ParseFloat(cellData[6], 32)         // tower.rssi
+		frequency, _ := strconv.ParseFloat(cellData[7], 32)    // tower.frequency
+		enodeb_id, _ := strconv.ParseInt(cellData[8], 10, 32)  // tower.enodeb_id
+		sector_id, _ := strconv.ParseInt(cellData[9], 10, 32)  // tower.sector_id
+		cfo, _ := strconv.ParseFloat(cellData[10], 32)         // tower.cfo
+		rsrq, _ := strconv.ParseFloat(cellData[11], 32)        // tower.rsrq
+		snr, _ := strconv.ParseFloat(cellData[12], 32)         // tower.snr
+		rsrp, _ := strconv.ParseFloat(cellData[13], 32)        // tower.rsrp
+		tx_pwr, _ := strconv.ParseFloat(cellData[14], 32)      // tower.tx_pwr
+		raw_sib1 := cellData[15]                               // tower.raw_sib1
+		timestamp, _ := strconv.ParseInt(cellData[16], 10, 32) // seconds
 
 		cell := &cellv1.Cell{
 			Id:        uuid.New().String(),
@@ -124,8 +120,7 @@ func (s *CellMeasurementService) Produce(msg string) {
 			Snr:       snr,
 			Rsrp:      rsrp,
 			TxPwr:     tx_pwr,
-			EstDist:   est_dist,
-			RawSib1:   cellData[16],
+			RawSib1:   raw_sib1,
 			Timestamp: timestamp,
 		}
 
