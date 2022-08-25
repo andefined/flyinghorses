@@ -1,0 +1,60 @@
+syntax = "proto3";
+
+package flyinghorses.cell.v1;
+
+enum CellLabel {
+    CELL_LABEL_UNSPECIFIED = 0;
+    CELL_LABEL_UNKNOWN = 1;
+    CELL_LABEL_LEGITIMATE = 2;
+    CELL_LABEL_SMALL_CELL = 3;
+    CELL_LABEL_SUSPICIOUS = 4;
+    CELL_LABEL_CSS = 5;
+}
+
+enum CellSource {
+    CELL_SOURCE_UNSPECIFIED = 0;
+    CELL_SOURCE_UNKNOWN = 1;
+    CELL_SOURCE_WIGGLE = 2;
+    CELL_SOURCE_OPENCELLID = 3;
+}
+
+// 202,10,40700,2617101,164,3350,-52.9655,2680,10223,13,-0.383168,-14.5692,-5.42715,-18.314,8.50311,48b8183c972c9c7ed16210001ea81c543f22aa91d48719adf145,1661453161
+message Cell {
+    int64 mcc = 1;
+    int64 mnc = 2;
+    int64 tac = 3;
+    int64 cid = 4;
+    int64 phyid = 5;
+    int64 earfcn = 6;
+    double rssi = 7;
+    double frequency = 8;
+    int64 enodeb_id = 9;
+    int64 sector_id = 10;
+    double cfo = 11;
+    double rsrq = 12;
+    double snr = 13;
+    double rsrp = 14;
+    double tx_pwr = 15;
+    double est_dist = 16;
+    string raw_sib1 = 17;
+    int64 timestamp = 18;
+    
+    string id = 19;
+    string created_at = 20;
+
+    double lat = 21;
+    double lon = 22;
+    
+    int64 suspiciousness = 23;
+    CellLabel classification = 24;
+    CellSource source = 25;
+}
+
+message StreamRequest {}
+message StreamResponse {
+    Cell data = 1;
+}
+
+service CellService {
+    rpc Stream(StreamRequest) returns (stream StreamResponse) {};
+}

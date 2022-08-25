@@ -1,0 +1,14 @@
+version: v1
+name: buf.build/andefined/flyinghorses
+lint:
+  use:
+    - BASIC
+  rpc_allow_same_request_response: true
+breaking:
+  use:
+    - FILE
+deps:
+  - buf.build/googleapis/googleapis
+  - buf.build/srikrsna/protoc-gen-gotag
+build:
+  excludes: []
