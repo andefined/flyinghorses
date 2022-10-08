@@ -1,6 +1,8 @@
 syntax = "proto3";
 
-package flyinghorses.cell.v1;
+package c.cell.v1;
+
+import "flyinghorses/commons/v1/common.proto";
 
 enum CellLabel {
     CELL_LABEL_UNSPECIFIED = 0;
@@ -18,43 +20,90 @@ enum CellSource {
     CELL_SOURCE_OPENCELLID = 3;
 }
 
-// 202,10,40700,2617101,164,3350,-52.9655,2680,10223,13,-0.383168,-14.5692,-5.42715,-18.314,8.50311,48b8183c972c9c7ed16210001ea81c543f22aa91d48719adf145,1661453161
-message Cell {
-    int64 mcc = 1;
-    int64 mnc = 2;
-    int64 tac = 3;
-    int64 cid = 4;
-    int64 phyid = 5;
-    int64 earfcn = 6;
-    double rssi = 7;
-    double frequency = 8;
-    int64 enodeb_id = 9;
-    int64 sector_id = 10;
-    double cfo = 11;
-    double rsrq = 12;
-    double snr = 13;
-    double rsrp = 14;
-    double tx_pwr = 15;
-    double est_dist = 16;
-    string raw_sib1 = 17;
-    int64 timestamp = 18;
-    
-    string id = 19;
-    string created_at = 20;
-
-    double lat = 21;
-    double lon = 22;
-    
-    int64 suspiciousness = 23;
-    CellLabel classification = 24;
-    CellSource source = 25;
+message CellLocation {
+    // Approximate Latitude obtained via GPSD
+    double lat = 1;
+    // Approximate Longitude obtained via GPSD
+    double lon = 2;
 }
 
-message StreamRequest {}
-message StreamResponse {
-    Cell data = 1;
+message CellMeta {
+    string name = 1;
+    string description = 2;
+    string notes = 3;
+    string operator = 4;
+}
+
+message Cell {
+    // Mobile Country Code
+    int64 mcc = 1;
+    // Mobile Network Code
+    int64 mnc = 2;
+    // Tracking Area Code
+    int64 tac = 3;
+    // Cell ID
+    int64 cid = 4;
+    // PHY-layer Cell ID
+    int64 phyid = 5;
+    // E-UTRA Absolute Radio Frequency Channel
+    int64 earfcn = 6;
+    // Received Signal Strength Indicator
+    double rssi = 7;
+    // Transmitting Frequency
+    double frequency = 8;
+    // Enodeb ID
+    int64 enodeb_id = 9;
+    // Sector ID
+    int64 sector_id = 10;
+    // Carrier Frequency Offset
+    double cfo = 11;
+    // Reference Signal Received Quality (N*(RSRP/RSSI))
+    double rsrq = 12;
+    // Signal Noise Ratio
+    double snr = 13;
+    // Reference Signal Received Power
+    double rsrp = 14;
+    // Transmitting Power
+    double tx_pwr = 15;
+    // Estimated Distance
+    double est_dist = 16;
+    // Raw Cell Access Related Information
+    string raw_sib1 = 17;
+    // Timestamp
+    int64 timestamp = 18;
+    
+    // Cell ID
+    string id = 19;
+    // Cell Created at Datetim
+    string created_at = 20;
+
+    // Cell Suspiciousness (0-100)
+    int64 suspiciousness = 21;
+    // Cell Location
+    CellLocation location = 22;
+    // Cell Classified Label
+    CellLabel classification = 23;
+    // Cell Source
+    CellSource source = 24;
+    // Cell Meta
+    CellMeta meta = 25;
+}
+
+message CellQueryParams {
+    Cell cell = 1;
+    int64 limit = 2;
+    int64 page = 3;
+}
+message CellList {
+    repeated Cell data = 1;
+    flyinghorses.commons.v1.Pagination pagination = 2;
 }
 
 service CellService {
-    rpc Stream(StreamRequest) returns (stream StreamResponse) {};
+    rpc Stream(CellQueryParams) returns (stream Cell) {};
+    rpc Create(Cell) returns (flyinghorses.commons.v1.GenericResponse) {};
+    rpc Update(Cell) returns (flyinghorses.commons.v1.GenericResponse) {};
+    rpc Get(CellQueryParams) returns (Cell) {};
+    rpc List(CellQueryParams) returns (CellList) {};
+    rpc Delete(Cell) returns (flyinghorses.commons.v1.GenericResponse) {};
 }

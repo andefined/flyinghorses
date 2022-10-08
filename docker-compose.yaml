@@ -1,0 +1,45 @@
+version: '3.2'
+
+services:
+  reverse-proxy:
+    image: traefik # The official Traefik docker image
+    command: --api.insecure=true --providers.docker # Enables the web UI and tells Traefik to listen to docker
+    ports:
+      - "80:80"     # The HTTP port
+      - "8082:8080" # The Web UI (enabled by --api)
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock # So that Traefik can listen to the Docker events
+
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:7.10.2
+    ports:
+      - 9200:9200
+      - 9300:9300
+    environment:
+     - discovery.type=single-node
+     - bootstrap.memory_lock=true
+     - ES_JAVA_OPTS=-Xms512m -Xmx512m
+     - network.host=0.0.0.0
+    volumes:
+      - data_es_flyinghorses:/usr/share/elasticsearch/data
+    labels:
+      - "traefik.frontend.rule=Host:elasticsearch.docker.localhost"
+
+  kibana:
+    image: docker.elastic.co/kibana/kibana:7.10.2
+    ports:
+      - 5601:5601
+    environment:
+      - ELASTICSEARCH_URL=http://elasticsearch:9200
+    labels:
+      - "traefik.frontend.rule=Host:kibana.docker.localhost"
+  
+  redis:
+    image: redis:5
+    ports:
+      - 6379:6379
+    labels:
+      - "traefik.frontend.rule=Host:redis.docker.localhost"
+
+volumes:
+  data_es_flyinghorses:

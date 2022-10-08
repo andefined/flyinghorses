@@ -3,6 +3,8 @@ name: buf.build/andefined/flyinghorses
 lint:
   use:
     - BASIC
+  except:
+    - RPC_REQUEST_RESPONSE_UNIQUE
   rpc_allow_same_request_response: true
 breaking:
   use:

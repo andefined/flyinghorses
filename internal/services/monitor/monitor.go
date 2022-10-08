@@ -3,161 +3,51 @@ package monitor
 import (
 	"context"
 	"os"
-	"os/exec"
 	"os/signal"
-	"strconv"
-	"strings"
 	"syscall"
+	"time"
 
-	cellv1 "github.com/andefined/flyinghorses/internal/flyinghorses/cell/v1"
+	"github.com/andefined/flyinghorses/internal/services/cell"
 	"github.com/andefined/flyinghorses/pkg/config"
 	"github.com/andefined/flyinghorses/pkg/logger"
-	"github.com/google/uuid"
-	"go.uber.org/zap"
+	"github.com/go-redis/redis/v8"
 )
-
-// CellMeasurementService
-type CellMeasurementService struct {
-	log           *zap.SugaredLogger
-	Command       string
-	Args          string
-	OutputChannel chan string
-	ErrorChannel  chan error
-}
-
-// NewCellMeasurementSerice
-func NewCellMeasurementSerice(log *zap.SugaredLogger, cmd string, args string, out chan string, err chan error) *CellMeasurementService {
-	return &CellMeasurementService{
-		log, cmd, args, out, err,
-	}
-}
-
-// Exec
-func (s *CellMeasurementService) Exec() {
-	// Create the command
-	cmd := exec.Command(s.Command, strings.Split(s.Args, " ")...)
-	// attach stderr to stdout for combined results
-	cmd.Stderr = cmd.Stdout
-	stdout, err := cmd.StdoutPipe()
-	if err != nil {
-		s.ErrorChannel <- err
-		return
-	}
-
-	if err := cmd.Start(); err != nil {
-		s.ErrorChannel <- err
-		return
-	}
-
-	for {
-		b := make([]byte, 1024)
-		_, err := stdout.Read(b)
-
-		if strings.Contains(string(b), "**** sending packet: ") {
-			replacer := strings.NewReplacer("<", "", ">", "")
-			msg := replacer.Replace(strings.Split(string(b), "**** sending packet: ")[1])
-			s.OutputChannel <- strings.TrimSpace(strings.Split(msg, "set")[0])
-		}
-
-		if err != nil {
-			s.ErrorChannel <- err
-			break
-		}
-	}
-}
-
-// Consume
-func (s *CellMeasurementService) Consume() {
-	for {
-		msg := <-s.OutputChannel
-		if msg != "" {
-			s.log.Debugf("Cell measurement: %s", msg)
-			s.Produce(msg)
-		}
-	}
-}
-
-// Produce
-// os << tower.mcc << "," << tower.mnc << "," << tower.tac << "," << tower.cid << "," << tower.phyid << ","
-// << tower.earfcn << "," << tower.rssi << "," << tower.frequency << "," << tower.enodeb_id << "," << tower.sector_id
-// << "," << tower.cfo << "," << tower.rsrq << "," << tower.snr << "," << tower.rsrp << "," << tower.tx_pwr << ","
-// << tower.raw_sib1 << "," << seconds;
-func (s *CellMeasurementService) Produce(msg string) {
-	cellData := strings.Split(msg, ",")
-	if len(cellData) == 17 {
-		mcc, _ := strconv.ParseInt(cellData[0], 10, 32)        // tower.mcc
-		mnc, _ := strconv.ParseInt(cellData[1], 10, 32)        // tower.mnc
-		tac, _ := strconv.ParseInt(cellData[2], 10, 32)        // tower.tac
-		cid, _ := strconv.ParseInt(cellData[3], 10, 32)        // tower.cid
-		phyid, _ := strconv.ParseInt(cellData[4], 10, 32)      // tower.phyid
-		earfcn, _ := strconv.ParseInt(cellData[5], 10, 32)     // tower.earfcn
-		rssi, _ := strconv.ParseFloat(cellData[6], 32)         // tower.rssi
-		frequency, _ := strconv.ParseFloat(cellData[7], 32)    // tower.frequency
-		enodeb_id, _ := strconv.ParseInt(cellData[8], 10, 32)  // tower.enodeb_id
-		sector_id, _ := strconv.ParseInt(cellData[9], 10, 32)  // tower.sector_id
-		cfo, _ := strconv.ParseFloat(cellData[10], 32)         // tower.cfo
-		rsrq, _ := strconv.ParseFloat(cellData[11], 32)        // tower.rsrq
-		snr, _ := strconv.ParseFloat(cellData[12], 32)         // tower.snr
-		rsrp, _ := strconv.ParseFloat(cellData[13], 32)        // tower.rsrp
-		tx_pwr, _ := strconv.ParseFloat(cellData[14], 32)      // tower.tx_pwr
-		raw_sib1 := cellData[15]                               // tower.raw_sib1
-		timestamp, _ := strconv.ParseInt(cellData[16], 10, 32) // seconds
-
-		cell := &cellv1.Cell{
-			Id:        uuid.New().String(),
-			Mcc:       mcc,
-			Mnc:       mnc,
-			Tac:       tac,
-			Cid:       cid,
-			Phyid:     phyid,
-			Earfcn:    earfcn,
-			Rssi:      rssi,
-			Frequency: frequency,
-			EnodebId:  enodeb_id,
-			SectorId:  sector_id,
-			Cfo:       cfo,
-			Rsrq:      rsrq,
-			Snr:       snr,
-			Rsrp:      rsrp,
-			TxPwr:     tx_pwr,
-			RawSib1:   raw_sib1,
-			Timestamp: timestamp,
-		}
-
-		s.log.Infof("New Cell: %v", cell)
-	} else {
-		s.log.Debugf("Malformed Cell Meaasurement: %v", msg)
-	}
-
-}
 
 // NewMonitorService
 func NewMonitorService(ctx context.Context, cfg *config.Config) error {
 	// ** LOGGER
 	// Create a reusable zap logger
 	log := logger.NewLogger(cfg.Env, cfg.Log.Level, cfg.Log.Path)
-	log.Info("Starting srsLTE->cell_measurement monitoring service")
+	log.Info("Subscribe to srsLTE->cell_measurement messages")
 
-	// Create the output channel
-	outputChannel := make(chan string)
-	defer close(outputChannel)
+	// ** TERMINATION
+	// Listen for os signals
+	osSignals := make(chan os.Signal, 1)
+	defer close(osSignals)
+	// Listen for manual termination
+	signal.Notify(osSignals, syscall.SIGTERM, syscall.SIGINT, syscall.SIGHUP, syscall.SIGQUIT)
+
+	redisClient := redis.NewClient(&redis.Options{
+		Addr: "localhost:6379", // We connect to host redis, thats what the hostname of the redis service is set to in the docker-compose
+	})
+	// Ping the Redis server and check if any errors occured
+	err := redisClient.Ping(context.Background()).Err()
+	if err != nil {
+		// Sleep for 3 seconds and wait for Redis to initialize
+		time.Sleep(3 * time.Second)
+		err := redisClient.Ping(context.Background()).Err()
+		if err != nil {
+			panic(err)
+		}
+	}
 
 	// Create the error channel
 	errorChannel := make(chan error, 1)
 	defer close(errorChannel)
 
-	// Listen for os signals
-	osSignals := make(chan os.Signal, 1)
-	defer close(osSignals)
-
-	// ** TERMINATION
-	// Listen for manual termination
-	signal.Notify(osSignals, syscall.SIGTERM, syscall.SIGINT, syscall.SIGHUP, syscall.SIGQUIT)
-
-	cellMeasurementService := NewCellMeasurementSerice(log, cfg.SRS.Command, cfg.GetSRSCommandArgs(), outputChannel, errorChannel)
-
+	topicChannel := redisClient.Subscribe(ctx, "cell")
+	cellMeasurementService := cell.NewCellMeasurementSerice(log, ctx, topicChannel, errorChannel)
 	go cellMeasurementService.Consume()
-	go cellMeasurementService.Exec()
 
 	select {
 	case err := <-errorChannel:

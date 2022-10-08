@@ -4,6 +4,7 @@ package cellv1
 
 import (
 	context "context"
+	v1 "github.com/andefined/flyinghorses/internal/flyinghorses/commons/v1"
 	grpc "google.golang.org/grpc"
 	codes "google.golang.org/grpc/codes"
 	status "google.golang.org/grpc/status"
@@ -18,7 +19,12 @@ const _ = grpc.SupportPackageIsVersion7
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type CellServiceClient interface {
-	Stream(ctx context.Context, in *StreamRequest, opts ...grpc.CallOption) (CellService_StreamClient, error)
+	Stream(ctx context.Context, in *CellQueryParams, opts ...grpc.CallOption) (CellService_StreamClient, error)
+	Create(ctx context.Context, in *Cell, opts ...grpc.CallOption) (*v1.GenericResponse, error)
+	Update(ctx context.Context, in *Cell, opts ...grpc.CallOption) (*v1.GenericResponse, error)
+	Get(ctx context.Context, in *CellQueryParams, opts ...grpc.CallOption) (*Cell, error)
+	List(ctx context.Context, in *CellQueryParams, opts ...grpc.CallOption) (*CellList, error)
+	Delete(ctx context.Context, in *Cell, opts ...grpc.CallOption) (*v1.GenericResponse, error)
 }
 
 type cellServiceClient struct {
@@ -29,8 +35,8 @@ func NewCellServiceClient(cc grpc.ClientConnInterface) CellServiceClient {
 	return &cellServiceClient{cc}
 }
 
-func (c *cellServiceClient) Stream(ctx context.Context, in *StreamRequest, opts ...grpc.CallOption) (CellService_StreamClient, error) {
-	stream, err := c.cc.NewStream(ctx, &CellService_ServiceDesc.Streams[0], "/flyinghorses.cell.v1.CellService/Stream", opts...)
+func (c *cellServiceClient) Stream(ctx context.Context, in *CellQueryParams, opts ...grpc.CallOption) (CellService_StreamClient, error) {
+	stream, err := c.cc.NewStream(ctx, &CellService_ServiceDesc.Streams[0], "/c.cell.v1.CellService/Stream", opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -45,7 +51,7 @@ func (c *cellServiceClient) Stream(ctx context.Context, in *StreamRequest, opts 
 }
 
 type CellService_StreamClient interface {
-	Recv() (*StreamResponse, error)
+	Recv() (*Cell, error)
 	grpc.ClientStream
 }
 
@@ -53,27 +59,92 @@ type cellServiceStreamClient struct {
 	grpc.ClientStream
 }
 
-func (x *cellServiceStreamClient) Recv() (*StreamResponse, error) {
-	m := new(StreamResponse)
+func (x *cellServiceStreamClient) Recv() (*Cell, error) {
+	m := new(Cell)
 	if err := x.ClientStream.RecvMsg(m); err != nil {
 		return nil, err
 	}
 	return m, nil
 }
 
+func (c *cellServiceClient) Create(ctx context.Context, in *Cell, opts ...grpc.CallOption) (*v1.GenericResponse, error) {
+	out := new(v1.GenericResponse)
+	err := c.cc.Invoke(ctx, "/c.cell.v1.CellService/Create", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *cellServiceClient) Update(ctx context.Context, in *Cell, opts ...grpc.CallOption) (*v1.GenericResponse, error) {
+	out := new(v1.GenericResponse)
+	err := c.cc.Invoke(ctx, "/c.cell.v1.CellService/Update", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *cellServiceClient) Get(ctx context.Context, in *CellQueryParams, opts ...grpc.CallOption) (*Cell, error) {
+	out := new(Cell)
+	err := c.cc.Invoke(ctx, "/c.cell.v1.CellService/Get", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *cellServiceClient) List(ctx context.Context, in *CellQueryParams, opts ...grpc.CallOption) (*CellList, error) {
+	out := new(CellList)
+	err := c.cc.Invoke(ctx, "/c.cell.v1.CellService/List", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *cellServiceClient) Delete(ctx context.Context, in *Cell, opts ...grpc.CallOption) (*v1.GenericResponse, error) {
+	out := new(v1.GenericResponse)
+	err := c.cc.Invoke(ctx, "/c.cell.v1.CellService/Delete", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // CellServiceServer is the server API for CellService service.
 // All implementations should embed UnimplementedCellServiceServer
 // for forward compatibility
 type CellServiceServer interface {
-	Stream(*StreamRequest, CellService_StreamServer) error
+	Stream(*CellQueryParams, CellService_StreamServer) error
+	Create(context.Context, *Cell) (*v1.GenericResponse, error)
+	Update(context.Context, *Cell) (*v1.GenericResponse, error)
+	Get(context.Context, *CellQueryParams) (*Cell, error)
+	List(context.Context, *CellQueryParams) (*CellList, error)
+	Delete(context.Context, *Cell) (*v1.GenericResponse, error)
 }
 
 // UnimplementedCellServiceServer should be embedded to have forward compatible implementations.
 type UnimplementedCellServiceServer struct {
 }
 
-func (UnimplementedCellServiceServer) Stream(*StreamRequest, CellService_StreamServer) error {
+func (UnimplementedCellServiceServer) Stream(*CellQueryParams, CellService_StreamServer) error {
 	return status.Errorf(codes.Unimplemented, "method Stream not implemented")
+}
+func (UnimplementedCellServiceServer) Create(context.Context, *Cell) (*v1.GenericResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method Create not implemented")
+}
+func (UnimplementedCellServiceServer) Update(context.Context, *Cell) (*v1.GenericResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method Update not implemented")
+}
+func (UnimplementedCellServiceServer) Get(context.Context, *CellQueryParams) (*Cell, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method Get not implemented")
+}
+func (UnimplementedCellServiceServer) List(context.Context, *CellQueryParams) (*CellList, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method List not implemented")
+}
+func (UnimplementedCellServiceServer) Delete(context.Context, *Cell) (*v1.GenericResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method Delete not implemented")
 }
 
 // UnsafeCellServiceServer may be embedded to opt out of forward compatibility for this service.
@@ -88,7 +159,7 @@ func RegisterCellServiceServer(s grpc.ServiceRegistrar, srv CellServiceServer) {
 }
 
 func _CellService_Stream_Handler(srv interface{}, stream grpc.ServerStream) error {
-	m := new(StreamRequest)
+	m := new(CellQueryParams)
 	if err := stream.RecvMsg(m); err != nil {
 		return err
 	}
@@ -96,7 +167,7 @@ func _CellService_Stream_Handler(srv interface{}, stream grpc.ServerStream) erro
 }
 
 type CellService_StreamServer interface {
-	Send(*StreamResponse) error
+	Send(*Cell) error
 	grpc.ServerStream
 }
 
@@ -104,17 +175,128 @@ type cellServiceStreamServer struct {
 	grpc.ServerStream
 }
 
-func (x *cellServiceStreamServer) Send(m *StreamResponse) error {
+func (x *cellServiceStreamServer) Send(m *Cell) error {
 	return x.ServerStream.SendMsg(m)
+}
+
+func _CellService_Create_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(Cell)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(CellServiceServer).Create(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/c.cell.v1.CellService/Create",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(CellServiceServer).Create(ctx, req.(*Cell))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _CellService_Update_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(Cell)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(CellServiceServer).Update(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/c.cell.v1.CellService/Update",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(CellServiceServer).Update(ctx, req.(*Cell))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _CellService_Get_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(CellQueryParams)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(CellServiceServer).Get(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/c.cell.v1.CellService/Get",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(CellServiceServer).Get(ctx, req.(*CellQueryParams))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _CellService_List_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(CellQueryParams)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(CellServiceServer).List(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/c.cell.v1.CellService/List",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(CellServiceServer).List(ctx, req.(*CellQueryParams))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _CellService_Delete_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(Cell)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(CellServiceServer).Delete(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/c.cell.v1.CellService/Delete",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(CellServiceServer).Delete(ctx, req.(*Cell))
+	}
+	return interceptor(ctx, in, info, handler)
 }
 
 // CellService_ServiceDesc is the grpc.ServiceDesc for CellService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
 var CellService_ServiceDesc = grpc.ServiceDesc{
-	ServiceName: "flyinghorses.cell.v1.CellService",
+	ServiceName: "c.cell.v1.CellService",
 	HandlerType: (*CellServiceServer)(nil),
-	Methods:     []grpc.MethodDesc{},
+	Methods: []grpc.MethodDesc{
+		{
+			MethodName: "Create",
+			Handler:    _CellService_Create_Handler,
+		},
+		{
+			MethodName: "Update",
+			Handler:    _CellService_Update_Handler,
+		},
+		{
+			MethodName: "Get",
+			Handler:    _CellService_Get_Handler,
+		},
+		{
+			MethodName: "List",
+			Handler:    _CellService_List_Handler,
+		},
+		{
+			MethodName: "Delete",
+			Handler:    _CellService_Delete_Handler,
+		},
+	},
 	Streams: []grpc.StreamDesc{
 		{
 			StreamName:    "Stream",

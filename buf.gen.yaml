@@ -2,6 +2,7 @@
 version: v1
 managed:
   enabled: true
+  cc_enable_arenas: false
   go_package_prefix:
     default: github.com/andefined/flyinghorses/internal
     except:

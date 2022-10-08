@@ -2,7 +2,6 @@ package config
 
 import (
 	"fmt"
-	"strings"
 	"time"
 )
 
@@ -15,15 +14,6 @@ type Config struct {
 		Level string `envconfig:"LOG_LEVEL" default:"info"`
 		Path  string `envconfig:"LOG_PATH" default:"tmp"`
 	}
-	// Mongo Settings
-	Mongo struct {
-		Host        string        `envconfig:"MONGO_HOST" default:"localhost"`
-		Port        int           `envconfig:"MONGO_PORT" default:"27017"`
-		Path        string        `envconfig:"MONGO_PATH" default:"flyinghorses"`
-		User        string        `envconfig:"MONGO_USER" default:""`
-		Pass        string        `envconfig:"MONGO_PASS" default:""`
-		DialTimeout time.Duration `envconfig:"MONGO_TIMEOUT" default:"15s"`
-	}
 	// gRPC Service Settings
 	Service struct {
 		Network         string        `envconfig:"SERVICE_NETWORK" default:"tcp"`
@@ -32,13 +22,24 @@ type Config struct {
 		ReadTimeout     time.Duration `envconfig:"SERVICE_READ_TIMEOUT" default:"10s"`
 		WriteTimeout    time.Duration `envconfig:"SERVICE_WRITE_TIMEOUT" default:"20s"`
 		ShutdownTimeout time.Duration `envconfig:"SERVICE_SHUTDOWN_TIMEOUT" default:"10s"`
-		DomainName      string        `envconfig:"SERVICE_DOMAIN_NAME" default:"flyinghorses.io"`
+		DomainName      string        `envconfig:"SERVICE_DOMAIN_NAME" default:"flyinghorses.xyz"`
+	}
+	Elastic struct {
+		Host        string        `envconfig:"ELASTIC_URL" default:"http://localhost:9200"`
+		User        string        `envconfig:"ELASTIC_USER" default:""`
+		Pass        string        `envconfig:"ELASTIC_PASS" default:""`
+		Index       string        `envconfig:"ELASTIC_INDEX" default:"the-follower_"`
+		DialTimeout time.Duration `envconfig:"DIAL_TIMEOUT" default:"30s"`
+	}
+	Redis struct {
+		Host string `envconfig:"REDIS_HOST" default:"localhost"`
+		Port string `envconfig:"REDIS_PORT" default:"6379"`
+		Path string `envconfig:"REDIS_PATH" default:"0"`
 	}
 	SRS struct {
-		Command string   `envconfig:"SRS_PATH" default:"external/cell_measurement"`
-		EARFCN  []string `envconfig:"SRS_EARFCN" default:"6400,2850,1700,3050,1451,1426,500,1844,1301,3350,6200,6300"`
-		MCC     []string `envconfig:"SRS_MCCS" default:"202"`
-		MNC     []string `envconfig:"SRS_MNCS" default:"01,02,03,04,05,06,07,09,10,11,12,13,14,15,16,299,999"`
+		EARFCN []string `envconfig:"SRS_EARFCN" default:"6400,2850,1700,3050,1451,1426,500,1844,1301,3350,6200,6300"`
+		MCC    []string `envconfig:"SRS_MCCS" default:"202"`
+		MNC    []string `envconfig:"SRS_MNCS" default:"01,02,03,04,05,06,07,09,10,11,12,13,14,15,16,299,999"`
 	}
 	Wiggle struct {
 		Enabled  bool   `envconfig:"WIGGLE_ENABLED" default:"true"`
@@ -74,16 +75,7 @@ func (c *Config) GetServiceURL() string {
 	return fmt.Sprintf("%s:%s", c.Service.Host, c.Service.Port)
 }
 
-// GetMongoURL returns server `host:port`
-func (c *Config) GetMongoURL() string {
-	return fmt.Sprintf("mongodb://%s:%d/%s", c.Mongo.Host, c.Mongo.Port, c.Mongo.Path)
-}
-
-// GetSRSCommandArgs returns server `host:port`
-func (c *Config) GetSRSCommandArgs() string {
-	args := fmt.Sprintf("-z %s", strings.Join(c.SRS.EARFCN, ","))
-	if c.Log.Level == "DEBUG" {
-		args += " -v"
-	}
-	return args
+// RedisURL returns server `host:port`
+func (c *Config) RedisURL() string {
+	return fmt.Sprintf("%s:%s", c.Redis.Host, c.Redis.Port)
 }

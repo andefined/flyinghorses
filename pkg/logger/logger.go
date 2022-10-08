@@ -12,9 +12,9 @@ func NewLogger(env, level, path string) *zap.SugaredLogger {
 	var logger *zap.Logger
 
 	if env == "production" {
-		logger = productionLogger()
+		logger = productionLogger(level)
 	} else {
-		logger = developmentLogger()
+		logger = developmentLogger(level)
 	}
 
 	defer logger.Sync()
@@ -22,11 +22,15 @@ func NewLogger(env, level, path string) *zap.SugaredLogger {
 }
 
 // set production logger defaults
-func productionLogger() *zap.Logger {
+func productionLogger(level string) *zap.Logger {
+	logLevel := zapcore.DebugLevel
+	if level == "info" {
+		logLevel = zapcore.InfoLevel
+	}
 	cfg := zap.Config{
 		Encoding:         "json",
 		Development:      false,
-		Level:            zap.NewAtomicLevelAt(zapcore.DebugLevel),
+		Level:            zap.NewAtomicLevelAt(logLevel),
 		OutputPaths:      []string{"stderr"},
 		ErrorOutputPaths: []string{"stderr"},
 		EncoderConfig: zapcore.EncoderConfig{
@@ -44,11 +48,15 @@ func productionLogger() *zap.Logger {
 }
 
 // set development logger defaults
-func developmentLogger() *zap.Logger {
+func developmentLogger(level string) *zap.Logger {
+	logLevel := zapcore.DebugLevel
+	if level == "info" {
+		logLevel = zapcore.InfoLevel
+	}
 	cfg := zap.Config{
 		Encoding:         "console",
 		Development:      true,
-		Level:            zap.NewAtomicLevelAt(zapcore.DebugLevel),
+		Level:            zap.NewAtomicLevelAt(logLevel),
 		OutputPaths:      []string{"stderr"},
 		ErrorOutputPaths: []string{"stderr"},
 		EncoderConfig: zapcore.EncoderConfig{

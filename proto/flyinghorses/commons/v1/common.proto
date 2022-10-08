@@ -1,0 +1,13 @@
+syntax = "proto3";
+
+package flyinghorses.commons.v1;
+
+message GenericResponse {
+    string status = 1;
+    string message = 2;
+}
+
+message Pagination {
+    int64 total = 1;
+    int64 pages = 2;
+}

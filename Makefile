@@ -42,6 +42,20 @@ lint:
 	golangci-lint run -e vendor
 	buf-lint
 
+db-start:
+	docker-compose up -d
+
+db-logs:
+	docker-compose logs -f
+
+db: db-start db-logs
+
+db-stop:
+	docker-compose stop
+
+cell-measurement:
+	bash start-cell-measurement.sh
+
 include $(INCLUDE_MAKEFILE)
 
 .PHONY: release
